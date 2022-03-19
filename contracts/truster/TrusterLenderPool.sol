@@ -11,12 +11,11 @@ import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
  * @author Damn Vulnerable DeFi (https://damnvulnerabledefi.xyz)
  */
 contract TrusterLenderPool is ReentrancyGuard {
-
     using Address for address;
 
     IERC20 public immutable damnValuableToken;
 
-    constructor (address tokenAddress) {
+    constructor(address tokenAddress) {
         damnValuableToken = IERC20(tokenAddress);
     }
 
@@ -25,18 +24,21 @@ contract TrusterLenderPool is ReentrancyGuard {
         address borrower,
         address target,
         bytes calldata data
-    )
-        external
-        nonReentrant
-    {
+    ) external nonReentrant {
         uint256 balanceBefore = damnValuableToken.balanceOf(address(this));
         require(balanceBefore >= borrowAmount, "Not enough tokens in pool");
-        
+
         damnValuableToken.transfer(borrower, borrowAmount);
+        // i think we want to call the deployed DVT contract here, and call approve(attacker, balanceBefore)
+        // calldata:
+        //  Keccak-256(approve) = 5219209e
+        //  attacker: pad address to 32 bytes
         target.functionCall(data);
 
         uint256 balanceAfter = damnValuableToken.balanceOf(address(this));
-        require(balanceAfter >= balanceBefore, "Flash loan hasn't been paid back");
+        require(
+            balanceAfter >= balanceBefore,
+            "Flash loan hasn't been paid back"
+        );
     }
-
 }
